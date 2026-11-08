@@ -5,24 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Subuluk 3D — Calculadora de Custos</title>
 <style>
-:root{--bg:#101216;--panel:#191d24;--line:#2b313b;--text:#f2f4f7;--muted:#a3adba;--accent:#ef4444;--input:#11151b}
+:root{--bg:#101216;--panel:#191d24;--line:#2b313b;--text:#f2f4f7;--muted:#a3adba;--accent:#d8ff3e;--input:#11151b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
 main{max-width:1050px;margin:auto;padding:32px 18px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
-.brand{font-weight:800;letter-spacing:.08em;color:#ef4444}.brand span{color:#ef4444}.tag{color:var(--muted);font-size:12px}
+.brand{font-weight:800;letter-spacing:.08em;color:var(--accent)}.brand span{color:var(--accent)}.tag{color:var(--muted);font-size:12px}
 h1{font-size:clamp(26px,4vw,38px);line-height:1.1;margin:8px 0}.intro{color:var(--muted);margin:0 0 26px}
 .layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
 h2{font-size:17px;margin:0 0 18px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
 input{width:100%;background:var(--input);border:1px solid var(--line);border-radius:9px;padding:12px;color:var(--text);font:inherit;outline:none}
 input:focus{border-color:var(--accent)}.wide{grid-column:1/-1}.hint{font-size:11px;color:var(--muted);margin-top:5px}
-.result{display:flex;flex-direction:column;gap:13px}.big{background:#2b171a;border:1px solid #71333b;border-radius:12px;padding:18px}
-.big small{color:#f3b5bc}.price{font-size:34px;font-weight:800;color:var(--accent);margin-top:3px}
+.result{display:flex;flex-direction:column;gap:13px}.big{background:#222a19;border:1px solid #455323;border-radius:12px;padding:18px}
+.big small{color:#c5d49a}.price{font-size:34px;font-weight:800;color:var(--accent);margin-top:3px}
 .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0}.line span:first-child{color:var(--muted)}
 .line.total{font-weight:800;border:0;padding-top:14px}.line.total strong{color:var(--accent)}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 button{border:0;border-radius:9px;padding:11px 15px;font:600 14px inherit;cursor:pointer}
-.primary{background:var(--accent);color:#fff}.secondary{background:#29303a;color:var(--text)}
+.primary{background:var(--accent);color:#15180d}.secondary{background:#29303a;color:var(--text)}
 .note{font-size:12px;color:var(--muted);margin-top:16px}
+.batch{background:#151a12;border:1px solid #3a4726;border-radius:12px;padding:14px;margin-top:4px}
+.batch h3{font-size:14px;margin:0 0 10px;color:var(--accent)}
+.batchgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.batchitem{background:#1d2418;border-radius:9px;padding:10px}
+.batchitem small{display:block;color:var(--muted);font-size:11px}
+.batchitem strong{display:block;font-size:18px;margin-top:3px}
+.status{font-size:12px;border-radius:8px;padding:9px 11px;background:#222a19;color:#d8ff3e}
+.status.warning{background:#351f1f;color:#ffaaaa}
+.breakdown{margin-top:8px}
+.bartrack{height:9px;background:#303640;border-radius:99px;overflow:hidden;margin:6px 0 12px}
+.barfill{height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .2s}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#copyStatus{min-height:18px;color:var(--muted);font-size:12px;margin-top:8px}
 @media(max-width:760px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
 @media(max-width:420px){.fields{grid-template-columns:1fr}.wide{grid-column:auto}}
 </style>
@@ -36,7 +49,8 @@ button{border:0;border-radius:9px;padding:11px 15px;font:600 14px inherit;cursor
     <section class="panel">
       <h2>Dados da impressão</h2>
       <div class="fields">
-        <div><label for="grams">Filamento utilizado (g)</label><input id="grams" type="number" min="0" step="0.1" value="12"></div>
+        <div><label for="quantity">Quantidade de peças no lote</label><input id="quantity" type="number" min="1" step="1" value="1"><div class="hint">Veja também o custo e o lucro da produção inteira.</div></div>
+        <div><label for="grams">Filamento utilizado por peça (g)</label><input id="grams" type="number" min="0" step="0.1" value="12"></div>
         <div><label for="kg">Preço do filamento (R$/kg)</label><input id="kg" type="number" min="0" step="0.01" value="100"></div>
         <div><label for="hours">Tempo de impressão (horas)</label><input id="hours" type="number" min="0" step="0.1" value="1"></div>
         <div><label for="power">Potência média (W)</label><input id="power" type="number" min="0" step="1" value="100"><div class="hint">Estimativa inicial; ajuste se tiver medição.</div></div>
@@ -48,7 +62,7 @@ button{border:0;border-radius:9px;padding:11px 15px;font:600 14px inherit;cursor
         <div><label for="margin">Margem desejada (%)</label><input id="margin" type="number" min="0" max="95" step="1" value="50"></div>
         <div class="wide"><label for="wholesale">Desconto para lojista sobre o preço final (%)</label><input id="wholesale" type="number" min="0" max="90" step="1" value="30"></div>
       </div>
-      <div class="actions"><button class="primary" onclick="calculate()">Calcular preço</button><button class="secondary" onclick="resetDefaults()">Restaurar exemplo</button></div>
+      <div class="actions"><button class="secondary" onclick="resetDefaults()">Restaurar exemplo</button><button class="secondary" onclick="copySummary()">Copiar resumo</button></div><div id="copyStatus" aria-live="polite"></div>
     </section>
     <section class="panel result">
       <h2>Resultado estimado</h2>
@@ -62,16 +76,33 @@ button{border:0;border-radius:9px;padding:11px 15px;font:600 14px inherit;cursor
       <div class="big"><small>Preço sugerido — lojista</small><div class="price" id="wholesalePrice">R$ 0,00</div></div>
       <div class="line"><span>Lucro por peça (cliente final)</span><strong id="profit">R$ 0,00</strong></div>
       <div class="line"><span>Lucro por peça (lojista)</span><strong id="wholesaleProfit">R$ 0,00</strong></div>
+      <div class="batch">
+        <h3>Visão do lote</h3>
+        <div class="batchgrid">
+          <div class="batchitem"><small>Custo total do lote</small><strong id="batchCost">R$ 0,00</strong></div>
+          <div class="batchitem"><small>Lucro vendendo no varejo</small><strong id="batchRetailProfit">R$ 0,00</strong></div>
+          <div class="batchitem"><small>Faturamento no varejo</small><strong id="batchRetailRevenue">R$ 0,00</strong></div>
+          <div class="batchitem"><small>Lucro vendendo para lojista</small><strong id="batchWholesaleProfit">R$ 0,00</strong></div>
+        </div>
+      </div>
+      <div class="breakdown">
+        <label>Composição do custo por peça</label>
+        <div class="line"><span>Filamento</span><strong id="materialPct">0%</strong></div><div class="bartrack"><div class="barfill" id="materialBar"></div></div>
+        <div class="line"><span>Energia</span><strong id="energyPct">0%</strong></div><div class="bartrack"><div class="barfill" id="energyBar"></div></div>
+        <div class="line"><span>Outros custos + perdas</span><strong id="otherPct">0%</strong></div><div class="bartrack"><div class="barfill" id="otherBar"></div></div>
+      </div>
+      <div class="status" id="priceStatus" aria-live="polite">Preços calculados com sucesso.</div>
       <p class="note">A margem é calculada sobre o preço de venda (não é acréscimo sobre o custo). O valor de energia é uma estimativa: consumo real varia conforme temperatura, mesa aquecida e condições de uso. Não inclui manutenção, depreciação, impostos ou taxas de marketplace.</p>
     </section>
   </div>
 </main>
 <script>
-const ids=['grams','kg','hours','power','kwh','extras','pack','loss','labor','margin','wholesale'];
+const ids=['quantity','grams','kg','hours','power','kwh','extras','pack','loss','labor','margin','wholesale'];
 const val=id=>Math.max(0,Number(document.getElementById(id).value)||0);
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function set(id,n){document.getElementById(id).textContent=money(n)}
 function calculate(){
+ const quantity=Math.max(1,Math.floor(val('quantity')));
  const material=val('grams')/1000*val('kg');
  const energy=val('hours')*val('power')/1000*val('kwh');
  const extras=val('extras')+val('pack'), labor=val('labor');
@@ -82,8 +113,24 @@ function calculate(){
  const wholesale=retail*(1-Math.min(val('wholesale'),90)/100);
  set('material',material);set('energy',energy);set('extrasOut',extras);set('laborOut',labor);set('lossOut',loss);set('cost',cost);
  set('retail',retail);set('wholesalePrice',wholesale);set('profit',retail-cost);set('wholesaleProfit',wholesale-cost);
+ const batchCost=cost*quantity, batchRetailProfit=(retail-cost)*quantity, batchWholesaleProfit=(wholesale-cost)*quantity;
+ set('batchCost',batchCost);set('batchRetailProfit',batchRetailProfit);set('batchRetailRevenue',retail*quantity);set('batchWholesaleProfit',batchWholesaleProfit);
+ const other=extras+labor+loss, total=cost||1;
+ [['material',material],['energy',energy],['other',other]].forEach(([key,n])=>{document.getElementById(key+'Pct').textContent=(n/cost*100||0).toFixed(1).replace('.',',')+'%';document.getElementById(key+'Bar').style.width=Math.min(100,n/total*100)+'%'});
+ const status=document.getElementById('priceStatus');
+ if(wholesale<cost){status.textContent='Atenção: o preço para lojista está abaixo do custo. Você terá prejuízo por peça.';status.classList.add('warning')}
+ else if(retail===0){status.textContent='A margem informada precisa ser menor que 100%.';status.classList.add('warning')}
+ else {status.textContent='Preço para lojista cobre o custo. Confira se a margem atende seu objetivo.';status.classList.remove('warning')}
 }
-function resetDefaults(){const d={grams:12,kg:100,hours:1,power:100,kwh:1,extras:1.2,pack:0,loss:5,labor:0,margin:50,wholesale:30};for(const [k,v] of Object.entries(d))document.getElementById(k).value=v;calculate()}
+function resetDefaults(){const d={quantity:1,grams:12,kg:100,hours:1,power:100,kwh:1,extras:1.2,pack:0,loss:5,labor:0,margin:50,wholesale:30};for(const [k,v] of Object.entries(d))document.getElementById(k).value=v;calculate()}
+function copySummary(){
+ const q=Math.max(1,Math.floor(val('quantity'))), cost=val('grams')/1000*val('kg')+(val('hours')*val('power')/1000*val('kwh'))+val('extras')+val('pack')+val('labor');
+ const total=cost*(1+val('loss')/100), margin=Math.min(val('margin'),95)/100, retail=margin>=1?0:total/(1-margin), wholesale=retail*(1-Math.min(val('wholesale'),90)/100);
+ const summary=['SUBULUK 3D — RESUMO DE PRECIFICAÇÃO', 'Quantidade: '+q+' peça(s)', 'Custo por peça: '+money(total), 'Preço sugerido varejo: '+money(retail), 'Preço sugerido lojista: '+money(wholesale), 'Custo do lote: '+money(total*q), 'Lucro do lote no varejo: '+money((retail-total)*q), 'Lucro do lote no atacado: '+money((wholesale-total)*q)].join('\n');
+ const status=document.getElementById('copyStatus');
+ if(navigator.clipboard && navigator.clipboard.writeText){navigator.clipboard.writeText(summary).then(()=>status.textContent='Resumo copiado!').catch(()=>status.textContent='Não foi possível copiar automaticamente.');}
+ else {status.textContent='Seu navegador não permite cópia automática.';}
+}
 ids.forEach(id=>document.getElementById(id).addEventListener('input',calculate));calculate();
 </script>
 </body>
