@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subuluk 3D — Calculadora de Custos</title>
+<style>
+:root{--bg:#101216;--panel:#191d24;--line:#2b313b;--text:#f2f4f7;--muted:#a3adba;--accent:#d8ff3e;--input:#11151b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:1050px;margin:auto;padding:32px 18px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+.brand{font-weight:800;letter-spacing:.08em}.brand span{color:var(--accent)}.tag{color:var(--muted);font-size:12px}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.1;margin:8px 0}.intro{color:var(--muted);margin:0 0 26px}
+.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+h2{font-size:17px;margin:0 0 18px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+input{width:100%;background:var(--input);border:1px solid var(--line);border-radius:9px;padding:12px;color:var(--text);font:inherit;outline:none}
+input:focus{border-color:var(--accent)}.wide{grid-column:1/-1}.hint{font-size:11px;color:var(--muted);margin-top:5px}
+.result{display:flex;flex-direction:column;gap:13px}.big{background:#222a19;border:1px solid #455323;border-radius:12px;padding:18px}
+.big small{color:#c5d49a}.price{font-size:34px;font-weight:800;color:var(--accent);margin-top:3px}
+.line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0}.line span:first-child{color:var(--muted)}
+.line.total{font-weight:800;border:0;padding-top:14px}.line.total strong{color:var(--accent)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{border:0;border-radius:9px;padding:11px 15px;font:600 14px inherit;cursor:pointer}
+.primary{background:var(--accent);color:#15180d}.secondary{background:#29303a;color:var(--text)}
+.note{font-size:12px;color:var(--muted);margin-top:16px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.fields{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">SUBULUK<span>3D</span></div><div class="tag">FERRAMENTA DE PRECIFICAÇÃO · V1.0</div></div>
+  <h1>Quanto custa produzir?</h1>
+  <p class="intro">Calcule o custo real da peça e encontre preços de venda para cliente final e lojista.</p>
+  <div class="layout">
+    <section class="panel">
+      <h2>Dados da impressão</h2>
+      <div class="fields">
+        <div><label for="grams">Filamento utilizado (g)</label><input id="grams" type="number" min="0" step="0.1" value="12"></div>
+        <div><label for="kg">Preço do filamento (R$/kg)</label><input id="kg" type="number" min="0" step="0.01" value="100"></div>
+        <div><label for="hours">Tempo de impressão (horas)</label><input id="hours" type="number" min="0" step="0.1" value="1"></div>
+        <div><label for="power">Potência média (W)</label><input id="power" type="number" min="0" step="1" value="100"><div class="hint">Estimativa inicial; ajuste se tiver medição.</div></div>
+        <div><label for="kwh">Tarifa de energia (R$/kWh)</label><input id="kwh" type="number" min="0" step="0.01" value="1"></div>
+        <div><label for="extras">Acessórios por peça (R$)</label><input id="extras" type="number" min="0" step="0.01" value="1.2"><div class="hint">Ex.: argola, ímã, parafuso.</div></div>
+        <div><label for="pack">Embalagem por peça (R$)</label><input id="pack" type="number" min="0" step="0.01" value="0"></div>
+        <div><label for="loss">Reserva para perdas (%)</label><input id="loss" type="number" min="0" max="100" step="1" value="5"></div>
+        <div><label for="labor">Mão de obra por peça (R$)</label><input id="labor" type="number" min="0" step="0.01" value="0"></div>
+        <div><label for="margin">Margem desejada (%)</label><input id="margin" type="number" min="0" max="95" step="1" value="50"></div>
+        <div class="wide"><label for="wholesale">Desconto para lojista sobre o preço final (%)</label><input id="wholesale" type="number" min="0" max="90" step="1" value="30"></div>
+      </div>
+      <div class="actions"><button class="primary" onclick="calculate()">Calcular preço</button><button class="secondary" onclick="resetDefaults()">Restaurar exemplo</button></div>
+    </section>
+    <section class="panel result">
+      <h2>Resultado estimado</h2>
+      <div class="big"><small>Preço sugerido — cliente final</small><div class="price" id="retail">R$ 0,00</div></div>
+      <div class="line"><span>Filamento</span><strong id="material">R$ 0,00</strong></div>
+      <div class="line"><span>Energia</span><strong id="energy">R$ 0,00</strong></div>
+      <div class="line"><span>Acessórios + embalagem</span><strong id="extrasOut">R$ 0,00</strong></div>
+      <div class="line"><span>Mão de obra</span><strong id="laborOut">R$ 0,00</strong></div>
+      <div class="line"><span>Reserva para perdas</span><strong id="lossOut">R$ 0,00</strong></div>
+      <div class="line total"><span>Custo total estimado</span><strong id="cost">R$ 0,00</strong></div>
+      <div class="big"><small>Preço sugerido — lojista</small><div class="price" id="wholesalePrice">R$ 0,00</div></div>
+      <div class="line"><span>Lucro por peça (cliente final)</span><strong id="profit">R$ 0,00</strong></div>
+      <div class="line"><span>Lucro por peça (lojista)</span><strong id="wholesaleProfit">R$ 0,00</strong></div>
+      <p class="note">A margem é calculada sobre o preço de venda (não é acréscimo sobre o custo). O valor de energia é uma estimativa: consumo real varia conforme temperatura, mesa aquecida e condições de uso. Não inclui manutenção, depreciação, impostos ou taxas de marketplace.</p>
+    </section>
+  </div>
+</main>
+<script>
+const ids=['grams','kg','hours','power','kwh','extras','pack','loss','labor','margin','wholesale'];
+const val=id=>Math.max(0,Number(document.getElementById(id).value)||0);
+const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function set(id,n){document.getElementById(id).textContent=money(n)}
+function calculate(){
+ const material=val('grams')/1000*val('kg');
+ const energy=val('hours')*val('power')/1000*val('kwh');
+ const extras=val('extras')+val('pack'), labor=val('labor');
+ const base=material+energy+extras+labor;
+ const loss=base*val('loss')/100, cost=base+loss;
+ const margin=Math.min(val('margin'),95)/100;
+ const retail=margin>=1?0:cost/(1-margin);
+ const wholesale=retail*(1-Math.min(val('wholesale'),90)/100);
+ set('material',material);set('energy',energy);set('extrasOut',extras);set('laborOut',labor);set('lossOut',loss);set('cost',cost);
+ set('retail',retail);set('wholesalePrice',wholesale);set('profit',retail-cost);set('wholesaleProfit',wholesale-cost);
+}
+function resetDefaults(){const d={grams:12,kg:100,hours:1,power:100,kwh:1,extras:1.2,pack:0,loss:5,labor:0,margin:50,wholesale:30};for(const [k,v] of Object.entries(d))document.getElementById(k).value=v;calculate()}
+ids.forEach(id=>document.getElementById(id).addEventListener('input',calculate));calculate();
+</script>
+</body>
+</html>
